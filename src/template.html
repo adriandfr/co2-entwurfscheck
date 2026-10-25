@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CO₂-Entwurfscheck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: Planblatt – Kopfleiste, links Modell & Hinweise, rechts Bilanz mit Materialtabelle */
+:root{
+  --paper:#f4f5f2; --sheet:#ffffff; --ink:#1c211e; --muted:#5d665f; --line:#d6dad3;
+  --accent:#2f6a4a; --accent-soft:#e3eee6; --warn:#a2610d; --warn-soft:#fbf0dc; --bad:#a3352b;
+  --m-concrete:#8e948f; --m-steel:#4d6c8a; --m-timber:#b98a4a; --m-insul:#c4b84a; --m-masonry:#b4664a; --m-glass:#6aa7b3; --m-other:#9b8fb0;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#141816; --sheet:#1c211e; --ink:#e7ebe6; --muted:#9aa49c; --line:#323a35;
+  --accent:#7cc39a; --accent-soft:#1f3328; --warn:#e3a74e; --warn-soft:#3a2d18; --bad:#ec8a7f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#141816; --sheet:#1c211e; --ink:#e7ebe6; --muted:#9aa49c; --line:#323a35;
+  --accent:#7cc39a; --accent-soft:#1f3328; --warn:#e3a74e; --warn-soft:#3a2d18; --bad:#ec8a7f; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 var(--f-body)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font:800 clamp(28px,4vw,40px)/1 var(--f-display);font-stretch:80%;margin:0;letter-spacing:-.01em}
+h1 sub{font-size:.55em;vertical-align:baseline}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.stamp{font:12px/1.4 var(--f-mono);color:var(--muted);text-align:right;border:1px solid var(--line);padding:6px 10px}
+.grid{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--sheet);border:1px solid var(--line);padding:16px;display:grid;gap:12px;min-width:0}
+h2{font:700 13px/1.2 var(--f-display);letter-spacing:.08em;text-transform:uppercase;margin:0;color:var(--muted)}
+.drop{border:1.5px dashed var(--line);padding:18px;text-align:center;cursor:pointer;display:grid;gap:6px}
+.drop.over,.drop:focus-within{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font-family:var(--f-display);font-size:18px}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.small{font-size:13px;color:var(--muted)}
+button{font:600 14px var(--f-body);border:1px solid var(--line);background:var(--sheet);color:var(--ink);padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)} button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px;margin:0}
+.kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.kv dt{color:var(--muted)}
+.status{font-size:14px;padding:8px 10px;background:var(--accent-soft)}
+.status.err{background:var(--warn-soft);color:var(--bad)}
+.warns{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.warns li{border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 10px;font-size:14px}
+.total{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:end}
+.big{font:800 clamp(44px,7vw,72px)/.9 var(--f-display);font-stretch:75%;font-variant-numeric:tabular-nums}
+.big small{font-size:.35em;font-weight:600;margin-left:6px;font-stretch:100%}
+.figs{display:flex;gap:28px;flex-wrap:wrap}
+.fig b{display:block;font:600 20px var(--f-mono);font-variant-numeric:tabular-nums}
+.fig span{font-size:13px;color:var(--muted)}
+.bar{display:flex;height:18px;width:100%;overflow:hidden;background:var(--line)}
+.bar i{display:block;height:100%}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+th{font:700 12px var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 8px;border-bottom:2px solid var(--ink)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sw{display:inline-block;width:12px;height:12px;margin-right:8px;vertical-align:-1px;border:1px solid rgb(0 0 0 / .15)}
+select,input[type=number]{font:14px var(--f-body);background:var(--sheet);color:var(--ink);border:1px solid var(--line);padding:5px 6px;max-width:100%}
+input[type=number]{width:90px;font-family:var(--f-mono)}
+.unmatched select{border-color:var(--bad)}
+.share{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.share i{display:block;height:8px;background:var(--accent);min-width:1px}
+.types{display:grid;gap:6px}
+.trow{display:grid;grid-template-columns:110px minmax(0,1fr) 90px;gap:10px;align-items:center;font-size:14px}
+.trow .track{height:12px;background:var(--line)}
+.trow .track i{display:block;height:100%;background:var(--ink)}
+.trow .v{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-weight:600}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;max-width:80ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.bar i,.share i,.trow .track i{transition:width .4s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>CO<sub>2</sub>-Entwurfscheck</h1>
+      <p class="sub">IFC-Modell hochladen, Graue Emissionen der Rohbaumaterialien grob abschätzen. Alles läuft in deinem Browser, die Datei verlässt deinen Rechner nicht.</p>
+    </div>
+    <div class="stamp">Lebenszyklusmodule A1–A3<br>Proof of Concept v0.1 · ICE V4.1</div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel">
+      <h2>Modell</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept=".ifc">
+        <strong>IFC-Datei wählen</strong>
+        <span class="small">oder hierher ziehen (IFC2x3 / IFC4)</span>
+      </label>
+      <button id="sample" type="button">Beispielmodell laden</button>
+      <div class="status" id="status">Lade IFC-Bibliothek …</div>
+      <dl class="kv" id="meta"></dl>
+      <h2>Hinweise</h2>
+      <ul class="warns" id="warns"><li>Noch kein Modell geladen.</li></ul>
+    </aside>
+
+    <main class="panel" style="gap:20px">
+      <section style="display:grid;gap:12px">
+        <h2>Treibhauspotenzial gesamt (GWP, A1–A3)</h2>
+        <div class="total">
+          <div class="big" id="total">–<small>t CO₂e</small></div>
+          <div class="figs">
+            <div class="fig"><b id="mass">–</b><span>Masse</span></div>
+            <div class="fig"><b id="vol">–</b><span>Bauteilvolumen</span></div>
+            <div class="fig"><b id="perm2">–</b><span>pro m² BGF</span></div>
+          </div>
+        </div>
+        <div class="bar" id="bar" aria-label="Anteile nach Material"></div>
+        <div class="legend" id="legend"></div>
+        <label class="small" for="bgf">BGF des Gebäudes (m²), optional für den Kennwert pro m²:
+          <input type="number" id="bgf" min="0" step="1" placeholder="z. B. 450"></label>
+      </section>
+
+      <section style="display:grid;gap:10px">
+        <h2>Materialien im Modell</h2>
+        <div class="tbl"><table>
+          <thead><tr><th>Material im IFC</th><th>Zuordnung Datenbank</th><th class="n">Volumen</th><th class="n">Masse</th><th class="n">kg CO₂e/kg</th><th class="n">t CO₂e</th><th class="n">Anteil</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7" class="small">Noch keine Daten.</td></tr></tbody>
+        </table></div>
+      </section>
+
+      <section style="display:grid;gap:10px">
+        <h2>Nach Bauteiltyp</h2>
+        <div class="types" id="types"></div>
+      </section>
+
+      <details>
+        <summary>Datenbank-Richtwerte ansehen und anpassen</summary>
+        <p class="small">Emissionsfaktoren aus der <a href="https://circularecology.com/embodied-energy-and-carbon-footprint-database.html" target="_blank" rel="noopener">ICE Database V4.1</a> (Circular Ecology, Okt. 2025; aktuelle Version dort prüfen), Module A1–A3, Holz ohne biogenen Kohlenstoff. Die Faktoren sind britische/europäische Durchschnittswerte, keine Hersteller-EPDs. Rohdichten sind typische Werte. Änderungen rechnen sofort neu.</p>
+        <div class="tbl"><table style="min-width:640px">
+          <thead><tr><th>Baustoff</th><th class="n">Dichte kg/m³</th><th class="n">kg CO₂e/kg</th><th>Quelle</th></tr></thead>
+          <tbody id="lib"></tbody>
+        </table></div>
+      </details>
+
+      <p class="note">Berechnung: Volumen jedes Bauteils aus der 3D-Geometrie, bei Schichtaufbauten anteilig nach Schichtdicke. Masse = Volumen × Dichte, GWP = Masse × Emissionsfaktor. Bewehrung nur bei Stahlbeton (pauschal ca. 120 kg/m³). Nicht enthalten: Verbindungsmittel, Ausbau, TGA, Transport und Baustelle (A4–A5). Ergebnis ist eine Größenordnung für den Variantenvergleich, keine Ökobilanz nach DIN EN 15978.</p>
+    </main>
+  </div>
+</div>
+
+<script type="text/plain" id="wasm">__WASM_B64__</script>
+<script type="text/plain" id="sampleifc">__SAMPLE_IFC__</script>
+<script type="module">
+const LIB = [
+  // Emissionsfaktoren: ICE Database V4.1 (Circular Ecology, Okt. 2025), Module A1–A3, kg CO₂e/kg.
+  // Rohdichten: typische Werte (eigene Annahmen). Holz ohne biogenen Kohlenstoff.
+  {id:'concrete', name:'Beton (ca. C30/37, unbewehrt)', density:2400, f:0.122, color:'--m-concrete', src:'ICE V4.1 · In-situ concrete 28/35 MPa', kw:['concrete','beton','stb','ortbeton','fertigteil']},
+  {id:'rconcrete', name:'Stahlbeton (C30/37)', density:2480, f:0.199, color:'--m-concrete', src:'ICE V4.1 · Beton 28/35 MPa + 120 kg/m³ Steel, Rebar (1,72)', kw:['reinforced','stahlbeton']},
+  {id:'steel', name:'Baustahl (Walzprofile)', density:7850, f:1.61, color:'--m-steel', src:'ICE V4.1 · Steel, Section (worldsteel 2023)', kw:['steel','stahl','metal']},
+  {id:'woodfibre', name:'Holzfaserdämmung', density:160, f:0.715, color:'--m-insul', src:'ICE V4.1 · Timber, Fibreboard (Näherung)', kw:['holzfaser','woodfibre','wood fibre']},
+  {id:'clt', name:'Brettsperrholz (BSP / CLT)', density:470, f:0.25, color:'--m-timber', src:'ICE V4.1 · Timber, CLT (ohne C-Speicher)', kw:['clt','bsp','brettsperr','cross lam']},
+  {id:'glulam', name:'Brettschichtholz (BSH)', density:470, f:0.28, color:'--m-timber', src:'ICE V4.1 · Timber, Glulam (ohne C-Speicher)', kw:['glulam','bsh','brettschicht']},
+  {id:'timber', name:'Nadelholz (Vollholz / KVH)', density:450, f:0.263, color:'--m-timber', src:'ICE V4.1 · Timber, Softwood (ohne C-Speicher)', kw:['timber','wood','holz','kvh']},
+  {id:'glasswool', name:'Glaswolle', density:25, f:1.533, color:'--m-insul', src:'ICE V4.1 · Insulation, Glass Wool', kw:['glaswolle','glass wool','glasswool']},
+  {id:'eps', name:'EPS / XPS-Dämmung', density:20, f:3.69, color:'--m-insul', src:'ICE V4.1 · Insulation, Polystyrene', kw:['eps','xps','polystyr']},
+  {id:'mineralwool', name:'Mineralwolle (Platte)', density:150, f:1.25, color:'--m-insul', src:'ICE V4.1 · Insulation, Mineral Wool', kw:['mineral','wool','rock','steinwolle','insulation','dämm','daemm']},
+  {id:'brick', name:'Ziegel', density:1800, f:0.213, color:'--m-masonry', src:'ICE V4.1 · Bricks, General (Common Brick)', kw:['brick','ziegel','masonry','mauerwerk']},
+  {id:'limesand', name:'Kalksandstein', density:1800, f:0.15, color:'--m-masonry', src:'nicht in ICE V4.1 · Schätzwert', kw:['kalksand','calcium silicate','ks ']},
+  {id:'gypsum', name:'Gipskarton', density:800, f:0.238, color:'--m-other', src:'ICE V4.1 · Plaster, Plasterboard', kw:['gips','gypsum','plaster']},
+  {id:'glass', name:'Flachglas', density:2500, f:1.437, color:'--m-glass', src:'ICE V4.1 · Glass, General', kw:['glass','glas']},
+];
+const TYPE_DE = {IfcSlab:'Decken/Platten',IfcColumn:'Stützen',IfcBeam:'Träger',IfcWall:'Wände',IfcWallStandardCase:'Wände',IfcRoof:'Dach',IfcFooting:'Fundamente',IfcWindow:'Fenster',IfcDoor:'Türen',IfcStair:'Treppen',IfcStairFlight:'Treppen',IfcCovering:'Bekleidungen',IfcMember:'Stäbe',IfcPlate:'Platten',IfcRailing:'Geländer',IfcPile:'Pfähle',IfcCurtainWall:'Fassaden'};
+const SKIP = new Set(['IfcSpace','IfcOpeningElement','IfcSite','IfcBuilding','IfcBuildingStorey','IfcAnnotation','IfcGrid','IfcFurnishingElement','IfcVirtualElement']);
+
+const $ = id => document.getElementById(id);
+const fmt = (v,d=1) => v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const libById = id => LIB.find(l=>l.id===id);
+let state = null; // {fileName, groups:[{key,name,vol,types:{},match}], elements, warnings, layersSplit}
+
+function setStatus(t, err=false){ const s=$('status'); s.textContent=t; s.className='status'+(err?' err':''); }
+
+// ---- web-ifc laden (WASM eingebettet, Fetch umgeleitet) ----
+// Im fertigen Build (index.html) ist die WASM-Datei eingebettet. Öffnet man direkt
+// src/template.html, steht dort nur der Platzhalter: dann vom CDN laden.
+const WASM_TXT = $('wasm').textContent.trim();
+const EMBEDDED = !WASM_TXT.startsWith('__');
+const WASM_CDN = 'https://cdn.jsdelivr.net/npm/web-ifc@0.0.66/web-ifc.wasm';
+if(EMBEDDED){
+  const wasmBytes = Uint8Array.from(atob(WASM_TXT), c=>c.charCodeAt(0));
+  const realFetch = window.fetch.bind(window);
+  window.fetch = (u,o) => String(u).startsWith('inline-wasm:')
+    ? Promise.resolve(new Response(wasmBytes,{headers:{'Content-Type':'application/wasm'}}))
+    : realFetch(u,o);
+}
+let W, api;
+try{
+  W = await import('https://cdn.jsdelivr.net/npm/web-ifc@0.0.66/web-ifc-api.js');
+  api = new W.IfcAPI();
+  await api.Init(() => EMBEDDED ? 'inline-wasm:web-ifc.wasm' : WASM_CDN, true);
+  setStatus('Bereit. Beispielmodell wird geladen …');
+}catch(e){ setStatus('Die IFC-Bibliothek konnte nicht geladen werden. Seite neu laden. ('+e.message+')', true); throw e; }
+
+// ---- Geometrie ----
+function measure(m, mesh){
+  let v=0; const mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
+  const gs = mesh.geometries;
+  for(let i=0;i<gs.size();i++){
+    const pg=gs.get(i), g=api.GetGeometry(m,pg.geometryExpressID);
+    const vb=api.GetVertexArray(g.GetVertexData(),g.GetVertexDataSize());
+    const ib=api.GetIndexArray(g.GetIndexData(),g.GetIndexDataSize());
+    const t=pg.flatTransformation;
+    const P=k=>{const x=vb[k*6],y=vb[k*6+1],z=vb[k*6+2];
+      const p=[t[0]*x+t[4]*y+t[8]*z+t[12],t[1]*x+t[5]*y+t[9]*z+t[13],t[2]*x+t[6]*y+t[10]*z+t[14]];
+      for(let a=0;a<3;a++){if(p[a]<mn[a])mn[a]=p[a]; if(p[a]>mx[a])mx[a]=p[a];} return p;};
+    for(let j=0;j<ib.length;j+=3){
+      const a=P(ib[j]),b=P(ib[j+1]),c=P(ib[j+2]);
+      v+=(a[0]*(b[1]*c[2]-b[2]*c[1])-a[1]*(b[0]*c[2]-b[2]*c[0])+a[2]*(b[0]*c[1]-b[1]*c[0]))/6;
+    }
+    g.delete();
+  }
+  return {vol:Math.abs(v), len:Math.max(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2])};
+}
+const nm = x => x?.value ?? x ?? null;
+function layersOf(mat){
+  if(!mat) return [];
+  const T = mat.type;
+  if(T===W.IFCMATERIAL) return [{name:nm(mat.Name),frac:1}];
+  if(T===W.IFCMATERIALLAYERSETUSAGE) return layersOf(mat.ForLayerSet);
+  if(T===W.IFCMATERIALLAYERSET){
+    const L=(mat.MaterialLayers||[]).map(l=>({name:nm(l.Material?.Name)||'(Schicht ohne Material)',t:nm(l.LayerThickness)||0}));
+    const s=L.reduce((a,b)=>a+b.t,0)||1; return L.map(l=>({name:l.name,frac:l.t/s}));
+  }
+  if(T===W.IFCMATERIALLAYER) return [{name:nm(mat.Material?.Name),frac:1}];
+  if(T===W.IFCMATERIALLIST){const L=mat.Materials||[]; return L.map(x=>({name:nm(x.Name),frac:1/L.length}));}
+  const sub = mat.MaterialConstituents||mat.MaterialProfiles||mat.ForProfileSet?.MaterialProfiles;
+  if(sub){const L=sub.map(x=>nm(x.Material?.Name)||nm(x.Name)); return L.map(n=>({name:n,frac:1/L.length}));}
+  return [{name:nm(mat.Name)||'(unbekannter Materialtyp)',frac:1}];
+}
+function autoMatch(name){
+  const n=(name||'').toLowerCase();
+  if(/reinforced|stahlbeton/.test(n)) return 'rconcrete';
+  for(const l of LIB) if(l.kw.some(k=>n.includes(k))) return l.id;
+  return '';
+}
+
+function analyze(bytes, fileName){
+  const m = api.OpenModel(bytes, {COORDINATE_TO_ORIGIN:true});
+  const geo = {};
+  api.StreamAllMeshes(m, mesh => { geo[mesh.expressID] = measure(m, mesh); });
+  const typeOf = id => api.GetNameFromTypeCode(api.GetLineType(m,id));
+  const groups = new Map(); const done = new Set(); const warnings = []; let layered = 0; const solidSteel = {};
+  const add = (name, vol, type, id) => {
+    const key=name||'(ohne Material)';
+    if(!groups.has(key)) groups.set(key,{key,vol:0,types:{},count:new Set(),match:autoMatch(key)});
+    const g=groups.get(key); g.vol+=vol; g.types[type]=(g.types[type]||0)+vol; g.count.add(id);
+  };
+  for(const rid of api.GetLineIDsWithType(m, W.IFCRELASSOCIATESMATERIAL)){
+    const rel = api.GetLine(m, rid);
+    let mat; try{ mat = api.GetLine(m, rel.RelatingMaterial.value, true); }catch{ continue; }
+    const L = layersOf(mat);
+    for(const o of rel.RelatedObjects||[]){
+      const id=o.value, g=geo[id]; if(!g||done.has(id)) continue;
+      const type=typeOf(id); if(SKIP.has(type)) continue;
+      done.add(id); if(L.length>1) layered++;
+      for(const l of L) add(l.name, g.vol*l.frac, type, id);
+      if(L.length===1 && /steel|stahl/i.test(L[0].name||'') && !/beton|concrete/i.test(L[0].name) && g.len>0 && g.vol/g.len>0.02)
+        solidSteel[type]=(solidSteel[type]||0)+1;
+    }
+  }
+  for(const id of Object.keys(geo).map(Number)){
+    if(done.has(id)) continue; const type=typeOf(id); if(SKIP.has(type)) continue;
+    add('(ohne Material)', geo[id].vol, type, id); done.add(id);
+  }
+  const storeys = api.GetLineIDsWithType(m, W.IFCBUILDINGSTOREY).size();
+  const schema = api.GetModelSchema(m);
+  api.CloseModel(m);
+  for(const [t,n] of Object.entries(solidSteel))
+    warnings.push(`${n} ${TYPE_DE[t]||t} aus Stahl haben einen massiven Querschnitt (über 157 kg pro Meter). Vermutlich als Vollprofil modelliert statt als Walzprofil. Das treibt die Bilanz stark nach oben: Material oder Profil im Modell prüfen.`);
+  const noMat = groups.get('(ohne Material)');
+  if(noMat) warnings.push(`${noMat.count.size} Bauteile haben kein Material im IFC und sind nicht zugeordnet.`);
+  if(layered) warnings.push(`${layered} Bauteile mit Schichtaufbau wurden anteilig nach Schichtdicke aufgeteilt.`);
+  state = {fileName, schema, storeys, elements:done.size, groups:[...groups.values()], warnings};
+  render();
+}
+
+function calc(){
+  const rows = state.groups.map(g=>{
+    const l=libById(g.match);
+    const mass=l? g.vol*l.density : 0, co2=l? mass*l.f : 0;
+    return {...g, lib:l, mass, co2};
+  }).sort((a,b)=>b.co2-a.co2 || b.vol-a.vol);
+  const total=rows.reduce((a,r)=>a+r.co2,0);
+  return {rows,total,mass:rows.reduce((a,r)=>a+r.mass,0),vol:rows.reduce((a,r)=>a+r.vol,0)};
+}
+
+function render(){
+  if(!state) return;
+  const {rows,total,mass,vol}=calc();
+  $('meta').innerHTML = `<dt>Datei</dt><dd title="${esc(state.fileName)}">${esc(short(state.fileName))}</dd><dt>Schema</dt><dd>${state.schema}</dd><dt>Geschosse</dt><dd>${state.storeys}</dd><dt>Bauteile</dt><dd>${state.elements}</dd><dt>Materialien</dt><dd>${rows.length}</dd>`;
+  const unmatched = rows.filter(r=>!r.lib && r.vol>0);
+  const w=[...state.warnings]; if(unmatched.length) w.unshift(`${unmatched.length} Material(ien) ohne Zuordnung zählen nicht mit. Rot markierte Zeilen in der Tabelle zuordnen.`);
+  $('warns').innerHTML = (w.length? w : ['Keine Auffälligkeiten gefunden.']).map(x=>`<li>${esc(x)}</li>`).join('');
+  $('total').innerHTML = `${fmt(total/1000)}<small>t CO₂e</small>`;
+  $('mass').textContent = `${fmt(mass/1000)} t`;
+  $('vol').textContent = `${fmt(vol)} m³`;
+  const bgf=parseFloat($('bgf').value);
+  $('perm2').textContent = bgf>0 ? `${fmt(total/bgf,0)} kg CO₂e` : '–';
+  $('bar').innerHTML = rows.filter(r=>r.co2>0).map(r=>`<i style="width:${r.co2/total*100}%;background:var(${r.lib.color})" title="${esc(r.key)}: ${fmt(r.co2/total*100,0)} %"></i>`).join('');
+  const seen=new Set(); $('legend').innerHTML = rows.filter(r=>r.co2>0 && !seen.has(r.lib.color) && seen.add(r.lib.color)).map(r=>`<span><span class="sw" style="background:var(${r.lib.color})"></span>${esc(r.lib.name.split(' (')[0])}</span>`).join('');
+  $('rows').innerHTML = rows.map((r,i)=>`<tr class="${r.lib?'':'unmatched'}">
+    <td><span class="sw" style="background:var(${r.lib?r.lib.color:'--line'})"></span>${esc(r.key)}<div class="small">${r.count.size} Bauteile · ${Object.keys(r.types).map(t=>TYPE_DE[t]||t).filter((v,j,a)=>a.indexOf(v)===j).join(', ')}</div></td>
+    <td><select id="map-${i}" data-key="${esc(r.key)}" aria-label="Zuordnung für ${esc(r.key)}"><option value="">nicht zuordnen</option>${LIB.map(l=>`<option value="${l.id}" ${l.id===r.match?'selected':''}>${esc(l.name)}</option>`).join('')}</select></td>
+    <td class="n">${fmt(r.vol,2)} m³</td><td class="n">${r.lib?fmt(r.mass/1000,1)+' t':'–'}</td>
+    <td class="n">${r.lib?fmt(r.lib.f,2):'–'}</td><td class="n"><b>${r.lib?fmt(r.co2/1000,1):'–'}</b></td>
+    <td class="n"><div class="share"><i style="width:${total?r.co2/total*60:0}px"></i>${total?fmt(r.co2/total*100,0):0} %</div></td></tr>`).join('');
+  $('rows').querySelectorAll('select').forEach(s=>s.onchange=()=>{state.groups.find(g=>g.key===s.dataset.key).match=s.value; render();});
+  // nach Bauteiltyp
+  const byType={};
+  for(const r of rows){ if(!r.lib) continue; for(const [t,v] of Object.entries(r.types)){ const k=TYPE_DE[t]||t; byType[k]=(byType[k]||0)+v*r.lib.density*r.lib.f; } }
+  const tl=Object.entries(byType).sort((a,b)=>b[1]-a[1]); const tmax=tl[0]?.[1]||1;
+  $('types').innerHTML = tl.map(([k,v])=>`<div class="trow"><span>${esc(k)}</span><span class="track"><i style="width:${v/tmax*100}%"></i></span><span class="v">${fmt(v/1000)} t</span></div>`).join('') || '<p class="small">Keine zugeordneten Bauteile.</p>';
+}
+function renderLib(){
+  $('lib').innerHTML = LIB.map(l=>`<tr><td><span class="sw" style="background:var(${l.color})"></span>${esc(l.name)}</td>
+    <td class="n"><input type="number" id="d-${l.id}" value="${l.density}" min="0" step="10" aria-label="Dichte ${esc(l.name)}"></td>
+    <td class="n"><input type="number" id="f-${l.id}" value="${l.f}" min="0" step="0.01" aria-label="Faktor ${esc(l.name)}"></td><td class="small">${esc(l.src||'')}</td></tr>`).join('');
+  LIB.forEach(l=>{ $('d-'+l.id).oninput=e=>{l.density=+e.target.value||0;render();}; $('f-'+l.id).oninput=e=>{l.f=+e.target.value||0;render();}; });
+}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const short = s => s.length>22 ? s.slice(0,19)+'…' : s;
+
+async function loadFile(f){
+  setStatus(`Lese ${f.name} …`);
+  try{ const buf=new Uint8Array(await f.arrayBuffer()); await new Promise(r=>setTimeout(r,20)); analyze(buf,f.name); setStatus(`${f.name} ausgewertet.`); }
+  catch(e){ console.error(e); setStatus('Die Datei konnte nicht gelesen werden. Ist es eine gültige IFC-Datei? ('+e.message+')', true); }
+}
+function loadSample(){
+  const txt=$('sampleifc').textContent.replace(/^\s+/,'');
+  analyze(new TextEncoder().encode(txt), 'co2Test.ifc (Beispiel)');
+  setStatus('Beispielmodell ausgewertet. Eigene IFC-Datei oben wählen.');
+}
+$('file').onchange=e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); };
+const drop=$('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f) loadFile(f);});
+$('sample').onclick=loadSample;
+$('bgf').oninput=render;
+renderLib();
+const HAS_SAMPLE = !$('sampleifc').textContent.trim().startsWith('__');
+if(HAS_SAMPLE) loadSample();
+else { $('sample').hidden = true; setStatus('Bereit. IFC-Datei oben wählen oder hineinziehen.'); }
+</script>
